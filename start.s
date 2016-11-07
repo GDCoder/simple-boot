@@ -1,7 +1,7 @@
 .text
 .global _start
 _start:
-    /*å¼‚å¸¸å‘é‡è¡¨*/
+    /* Òì³£ÏòÁ¿±í */
     b reset
     ldr pc, undefined_instruction
     ldr pc, software_interrupt
@@ -12,13 +12,13 @@ _start:
     ldr pc, fiq
 
 reset:
-    /*è®¾ç½®CPUä¸ºSVC32æ¨¡å¼*/
+	/* ÉèÖÃCPUµ½SVC32Ä£Ê½ */
     mrs r0, cpsr
     bic r0, r0, #0x1F
     orr r0, r0, #0xD3
     msr cpsr, r0
     
-    /*è®¾ç½®å¼‚å¸¸å‘é‡åŸºåœ°å€åˆ°CP15åå¤„ç†C12å¯„å­˜å™¨ä¸­, æ­¤ç§æ“ä½œåªé€‚ç”¨äºARM11å’Œcortex-Aå¤„ç†å™¨*/
+    /* ÉèÖÃÒì³£ÏòÁ¿»ùµØÖ·µ½CP15Ğ­´¦ÀíÆ÷C12¼Ä´æÆ÷ÖĞ, ´Ë²Ù×÷Ö»ÊÊÓÃÓÚARM11ºÍCortex-A´¦ÀíÆ÷ */
     mrc p15, 0, r0, c1, c0, 0
     bic r0, #(1<<13)
     mcr p15, 0, r0, c1, c0, 0
@@ -27,7 +27,7 @@ reset:
     mcr p15, 0, r0, c12, c0, 0
 
 cpu_init_cp15:
-	/* æ— æ•ˆI CACHEå’ŒD CACHE */
+	/* ÎŞĞ§I-CACHEºÍD-CACHE */
 	mov	r0, #0                  @ set up for MCR
 	mcr	p15, 0, r0, c8, c7, 0	@ invalidate TLBs
 	mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache
@@ -35,7 +35,7 @@ cpu_init_cp15:
 	mcr p15, 0, r0, c7, c10, 4	@ DSB
 	mcr p15, 0, r0, c7, c5, 4	@ ISB
 
-	/* ç¦ç”¨MMU stuffå’ŒCACHE */
+	/* ½ûÓÃMMU stuffºÍCACHE */
 	mrc	p15, 0, r0, c1, c0, 0
 	bic	r0, r0, #0x00002000     @ clear bits 13 (--V-)
 	bic	r0, r0, #0x00000007     @ clear bits 2:0 (-CAM)
@@ -47,16 +47,16 @@ cpu_init_cp15:
 	mcr	p15, 0, r0, c1, c0, 0
 
 cpu_init_crit:
-    /* ç¦ç”¨çœ‹é—¨ç‹— */
+    /* ½ûÓÃ¿´ÃÅ¹· */
 	ldr r0, =0xfd0c0000
 	mov r1, #0
 	str r1, [r0, #0x0]
     
 halt_loop:
-    /* è¿›å…¥å¾ªç¯ */
+    /* ½øÈëÑ­»· */
     b halt_loop
 
-/* å¼‚å¸¸å¤„ç† */
+/* Òì³£´¦Àí */
 	.align	5
 undefined_instruction:
 	b undefined_instruction
@@ -84,3 +84,4 @@ irq:
 	.align	5
 fiq:
 	b fiq
+

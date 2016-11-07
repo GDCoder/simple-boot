@@ -18,3 +18,4 @@ boot.bin:$(objs)
 
 clean:
 	rm -r *.o *.elf *.bin *.dis
+
