@@ -26,8 +26,25 @@ reset:
     ldr r0, =_start
     mcr p15, 0, r0, c12, c0, 0
 
-cpu_init_cp15:
-	/* 无效I-CACHE和D-CACHE */
+	/* 禁用I/D CACHE和MMU及其CACHE */
+	bl	cpu_init_cp15
+
+	/*设置PLL, MUX, MEMORY*/
+	bl	cpu_init_crit
+
+	/* 跳到主函数 */
+	bl	halt_loop
+
+/*************************************************************************
+ *
+ * cpu_init_cp15
+ *
+ * Setup CP15 registers (cache, MMU, TLBs). The I-cache is turned on unless
+ * CONFIG_SYS_ICACHE_OFF is defined.
+ *
+ *************************************************************************/
+ENTRY(cpu_init_cp15)
+	/* 无效I CACHE和D CACHE */
 	mov	r0, #0                  @ set up for MCR
 	mcr	p15, 0, r0, c8, c7, 0	@ invalidate TLBs
 	mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache
@@ -35,22 +52,57 @@ cpu_init_cp15:
 	mcr p15, 0, r0, c7, c10, 4	@ DSB
 	mcr p15, 0, r0, c7, c5, 4	@ ISB
 
-	/* 禁用MMU stuff和CACHE */
+	/* disable MMU stuff and caches */
+	/* 禁用MMU Stuff和CACHE */
 	mrc	p15, 0, r0, c1, c0, 0
 	bic	r0, r0, #0x00002000     @ clear bits 13 (--V-)
 	bic	r0, r0, #0x00000007     @ clear bits 2:0 (-CAM)
 	orr	r0, r0, #0x00000002     @ set bit 1 (--A-) Align
 	orr	r0, r0, #0x00000800     @ set bit 11 (Z---) BTB
 	
-	/* bic	r0, r0, #0x00001000	@ clear bit 12 (I) I-cache */
-    orr	r0, r0, #0x00001000	@ set bit 12 (I) I-cache
+	#ifdef CONFIG_SYS_ICACHE_OFF
+		bic	r0, r0, #0x00001000	@ clear bit 12 (I) I-cache
+	#else
+		orr	r0, r0, #0x00001000	@ set bit 12 (I) I-cache
+	#endif
+	
 	mcr	p15, 0, r0, c1, c0, 0
+	mov	pc, lr					@ back to my caller
+ENDPROC(cpu_init_cp15)
 
-cpu_init_crit:
-    /* 禁用看门狗 */
-	ldr r0, =0xfd0c0000
-	mov r1, #0
-	str r1, [r0, #0x0]
+/*************************************************************************
+ *
+ * CPU_init_critical registers
+ *
+ * setup important registers
+ * setup memory timing
+ *
+ *************************************************************************/
+ENTRY(cpu_init_crit)
+	/*
+	 * Jump to board specific initialization...
+	 * The Mask ROM will have already initialized
+	 * basic memory. Go here to bump up clock rate and handle
+	 * wake up conditions.
+	 */
+	b	lowlevel_init			@ go setup pll,mux,memory
+ENDPROC(cpu_init_crit)
+
+/*************************************************************************
+ *
+ * Lowlevel_init
+ *
+ * Disable watchdog.
+ *
+ *
+ *************************************************************************/
+ENTRY(lowlevel_init)
+	/* 禁用看门狗 */
+	ldr     r0, =0xfd0c0000
+	mov             r1, #0
+	str     r1, [r0, #0x0]
+	mov	pc, lr
+ENDPROC(lowlevel_init)
     
 halt_loop:
     /* 进入循环 */
